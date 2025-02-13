@@ -16,7 +16,8 @@ class Project(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name="Статус")
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_projects", verbose_name="Создатель")
     participants = models.ManyToManyField(User, related_name="projects", verbose_name="Участники")
-
+    def can_create(self, user):
+        return user.role == 'manager'
     def __str__(self):
         return self.title
 
@@ -41,6 +42,7 @@ class Task(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks", verbose_name="Проект")
     assigned_to = models.ManyToManyField(User, related_name="tasks", verbose_name="Исполнители")
     previous_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name="next_task", verbose_name="Предыдущая задача")
-
+    def can_create(self, user):
+            return user.role == 'manager'
     def __str__(self):
         return self.title
