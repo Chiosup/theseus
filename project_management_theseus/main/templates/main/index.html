@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Главная страница</h1>
+
+<form method="GET">
+    <input type="text" name="q" placeholder="Поиск..." value="{{ search_query }}">
+    <button type="submit">Искать</button>
+</form>
+
+<h2>Проекты</h2>
+<ul>
+    {% for project in projects %}
+        <li><a href="{% url 'project_detail' project.id %}">{{ project.title }}</a></li>
+    {% empty %}
+        <li>Нет проектов</li>
+    {% endfor %}
+</ul>
+
+<h2>Задачи</h2>
+<ul>
+    {% for task in tasks %}
+        <li>{{ task.title }} ({{ task.status }})</li>
+    {% empty %}
+        <li>Нет задач</li>
+    {% endfor %}
+</ul>
+{% endblock %}

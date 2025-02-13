@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ project.name }}</h2>
+<p>{{ project.description }}</p>
+<p>Дата начала: {{ project.start_date }}</p>
+<p>Дата окончания: {{ project.end_date }}</p>
+<p>Статус: {{ project.get_status_display }}</p>
+
+{% if user.groups.all.0.name == "Менеджеры" %}
+    <a href="{% url 'create_task' project.id %}" class="btn btn-success">Добавить задачу</a>
+{% endif %}
+
+<div class="task-container">
+    <div class="task-list">
+        <h3>Задачи</h3>
+        <ul>
+            {% for task in tasks %}
+                <li>
+                    <strong>{{ task.name }}</strong> - {{ task.get_status_display }}
+                    {% if user in task.assignee.all %}
+                        <form method="post" action="{% url 'update_task_status' task.id %}">
+                            {% csrf_token %}
+                            <select name="status">
+                                <option value="new" {% if task.status == "new" %}selected{% endif %}>Новая</option>
+                                <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>В процессе</option>
+                                <option value="completed" {% if task.status == "completed" %}selected{% endif %}>Выполнена</option>
+                            </select>
+                            <button type="submit">Обновить</button>
+                        </form>
+                    {% endif %}
+                </li>
+            {% empty %}
+                <p>Задачи пока не добавлены.</p>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="gantt-chart">
+        <h3>Диаграмма Ганта</h3>
+        <canvas id="ganttChart"></canvas>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById("ganttChart").getContext("2d");
+
+        const tasks = JSON.parse(`[
+            {% for task in tasks %}
+                {
+                    "label": "{{ task.name|escapejs }}",
+                    "start": "{{ task.start_date|date:'Y-m-d' }}",
+                    "end": "{{ task.deadline|date:'Y-m-d' }}"
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]`);
+
+        // Преобразуем даты в объекты Date
+        tasks.forEach(task => {
+            task.start = new Date(task.start);
+            task.end = new Date(task.end);
+        });
+
+        console.log("Tasks:", tasks); // Отладочный вывод
+
+        const labels = tasks.map(task => task.label);
+        const startDates = tasks.map(task => task.start.getTime());
+        const endDates = tasks.map(task => task.end.getTime());
+
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Сроки выполнения",
+                    backgroundColor: "rgba(54, 162, 235, 0.5)",
+                    data: startDates.map((start, i) => ({
+                        x: labels[i],
+                        y: [start, endDates[i]]
+                    }))
+                }]
+            },
+            options: {
+                scales: {
+                    x: { type: "category" },
+                    y: { type: "time", time: { unit: "day" } }
+                }
+            }
+        });
+    });
+</script>
+
+
+{% endblock %}

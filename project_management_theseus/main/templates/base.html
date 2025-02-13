@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Проектное управление</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    {% load static %}
 </head>
 <body>
-    <nav>
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <img src="{% static 'img/logo.png' %}" alt="Логотип">
+        </a>
         {% if user.is_authenticated %}
             <a href="/">Главная</a>
             <a href="/profile/">Профиль</a>

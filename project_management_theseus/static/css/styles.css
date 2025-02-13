@@ -4,7 +4,13 @@ body {
     margin: 0;
     padding: 0;
 }
-
+.navbar {
+    display: flex;
+    align-items: center; /* Выравниваем элементы по центру */
+    justify-content: space-between; /* Разносим логотип влево, а меню вправо */
+    padding: 10px 20px;
+    background-color: #1c2440; /* Фон панели */
+}
 nav {
     background-color: #333;
     padding: 10px;
@@ -19,7 +25,10 @@ nav a {
 nav form {
     display: inline;
 }
-
+.logo img {
+    height: 50px; /* Задай нужный размер */
+    width: auto;
+}
 nav form button {
     background: none;
     border: none;
@@ -55,4 +64,29 @@ button {
 
 button:hover {
     background-color: #555;
+}
+.project-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.project-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    width: 30%;
+}
+
+.task-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.task-list {
+    width: 50%;
+}
+
+.gantt-chart {
+    width: 45%;
 }
