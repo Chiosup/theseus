@@ -12,7 +12,10 @@
             <a href="/">Главная</a>
             <a href="/profile/">Профиль</a>
             <a href="/messages/">Сообщения</a>
-            <a href="/logout/">Выйти</a>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit">Выйти</button>
+           </form>
         {% else %}
             <a href="/login/">Войти</a>
         {% endif %}
