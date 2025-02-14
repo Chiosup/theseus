@@ -37,6 +37,8 @@ class Task(models.Model):
     title = models.CharField(max_length=255, verbose_name="Название")
     description = models.TextField(verbose_name="Описание")
     due_date = models.DateField(verbose_name="Срок выполнения")
+    start_date = models.DateField(null=True, blank=True)  # Дата начала
+    end_date = models.DateField(null=True, blank=True)  # Дата завершения
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name="Статус")
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium', verbose_name="Приоритет")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks", verbose_name="Проект")

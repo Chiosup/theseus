@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ task.title }}</h2>
+<p><strong>Описание:</strong> {{ task.description }}</p>
+<p><strong>Приоритет:</strong> {{ task.priority }}</p>
+<p><strong>Статус:</strong> {{ task.status }}</p>
+
+{% if task.status == "new" %}
+    <form action="{% url 'start_task' task.id %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">Начать выполнение</button>
+    </form>
+{% elif task.status == "in_progress" %}
+<a href="{% url 'complete_task' task.id %}" class="btn btn-success">Завершить</a>
+<a href="{% url 'revert_to_pending' task.id %}" class="btn btn-warning">Вернуть в ожидание</a>
+{% elif task.status == "done" %}
+    <a href="{% url 'revert_to_in_progress' task.id %}" class="btn btn-danger">Вернуть в процесс</a>
+{% endif %}
+
+<a href="{% url 'project_detail' task.project.id %}" class="btn btn-secondary">Назад к проекту</a>
+{% endblock %}

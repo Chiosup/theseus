@@ -4,7 +4,8 @@ from .models import Project, Task
 from .forms import ProjectForm, TaskForm
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
-
+from django.http import HttpResponseForbidden
+import json
 
 @login_required
 def edit_project(request, project_id):
@@ -41,7 +42,21 @@ def project_detail(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     tasks = project.tasks.all().order_by("due_date")
 
-    return render(request, 'projects/project_detail.html', {'project': project, 'tasks': tasks})
+    tasks_data = []
+    for task in tasks:
+        tasks_data.append({
+            "id": task.id,
+            "name": task.title,
+            "start": task.start_date.strftime("%Y-%m-%d") if task.start_date else None,
+            "end": task.end_date.strftime("%Y-%m-%d") if task.end_date else None,
+            "progress": 100 if task.status == "Завершено" else (50 if task.status == "В процессе" else 0)
+        })
+
+    return render(request, 'projects/project_detail.html', {
+        "project": project,
+        "tasks": tasks,  # Передаем задачи для списка
+        "tasks_json": json.dumps(tasks_data)  # Передаем JSON для диаграммы Ганта
+    })
 
 @login_required
 def create_project(request):
@@ -92,10 +107,44 @@ def update_task_status(request, task_id):
 
     if request.method == "POST":
         new_status = request.POST.get("status")
-        if new_status in ['new', 'in_progress', 'completed']:
+        if new_status in ['new', 'in_progress', 'done']:
             task.status = new_status
-            if new_status == 'completed':
+            if new_status == 'done':
                 task.completed_by = request.user
             task.save()
     
     return redirect('project_detail', project_id=task.project.id)
+def task_detail(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    return render(request, "projects/task_detail.html", {"task": task})
+
+@login_required
+def start_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    if task.status == "new":
+        task.status = "in_progress"
+        task.save()
+    return redirect("project_detail", project_id=task.project.id)
+
+@login_required
+def complete_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    if task.status == "in_progress":
+        task.status = "done"
+        task.save()
+    return redirect("project_detail", project_id=task.project.id)
+def revert_to_pending(request, task_id):
+    """Откатывает задачу из 'in_progress' обратно в 'pending'."""
+    task = get_object_or_404(Task, id=task_id)
+    if task.status == 'in_progress':  
+        task.status = 'new'
+        task.save()
+    return redirect('task_detail', task_id=task.id)
+
+def revert_to_in_progress(request, task_id):
+    """Откатывает задачу из 'completed' обратно в 'in_progress'."""
+    task = get_object_or_404(Task, id=task_id)
+    if task.status == 'done':  
+        task.status = 'in_progress'
+        task.save()
+    return redirect('task_detail', task_id=task.id)

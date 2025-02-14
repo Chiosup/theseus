@@ -12,32 +12,70 @@
 
 <div class="task-container">
     <div class="task-list">
-        <h3>Задачи</h3>
+        <h3>Задачи в процессе</h3>
         <ul>
             {% for task in tasks %}
-                <li>
-                    <strong>{{ task.name }}</strong> - {{ task.get_status_display }}
-                    {% if user in task.assignee.all %}
-                        <form method="post" action="{% url 'update_task_status' task.id %}">
+                {% if task.status == "in_progress" %}
+                    <li>
+                        <a href="{% url 'task_detail' task.id %}">{{ task.title }}</a>
+                        <form action="{% url 'complete_task' task.id %}" method="post" style="display:inline;">
                             {% csrf_token %}
-                            <select name="status">
-                                <option value="new" {% if task.status == "new" %}selected{% endif %}>Новая</option>
-                                <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>В процессе</option>
-                                <option value="completed" {% if task.status == "completed" %}selected{% endif %}>Выполнена</option>
-                            </select>
-                            <button type="submit">Обновить</button>
+                            <button type="submit" class="btn btn-success">Завершить</button>
                         </form>
-                    {% endif %}
-                </li>
+                    </li>
+                {% endif %}
             {% empty %}
-                <p>Задачи пока не добавлены.</p>
+                <p>Нет задач в процессе.</p>
             {% endfor %}
         </ul>
+        
+        <h3>Завершенные задачи</h3>
+        <ul>
+            {% for task in tasks %}
+                {% if task.status == "done" %}
+                    <li>
+                        <a href="{% url 'task_detail' task.id %}">{{ task.title }}</a>
+                    </li>
+                {% endif %}
+            {% empty %}
+                <p>Нет завершенных задач.</p>
+            {% endfor %}
+        </ul>
+        
+        <h3>Ожидающие выполнения</h3>
+        <ul>
+            {% for task in tasks %}
+                {% if task.status == "new" %}
+                    <li>
+                        <a href="{% url 'task_detail' task.id %}">{{ task.title }}</a>
+                        <form action="{% url 'start_task' task.id %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">Начать выполнение</button>
+                        </form>
+                    </li>
+                {% endif %}
+            {% empty %}
+                <p>Нет ожидающих выполнения задач.</p>
+            {% endfor %}
+        </ul>
+        
     </div>
+<!-- Подключаем Frappe Gantt -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css">
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.min.js"></script>
 
-    <div class="gantt-chart">
+    <div id="gantt-container">
         <h3>Диаграмма Ганта</h3>
-        <canvas id="ganttChart"></canvas>
+        <script>
+            console.log("Проверяем функцию: ", typeof renderGanttChart);
+            console.log("Frappe Gantt:", typeof Gantt);
+            document.addEventListener("DOMContentLoaded", function () {
+                console.log("Страница загружена, вызываем рендер диаграммы.");
+                renderGanttChart(tasksData);
+            });
+        </script>
+        
+        
     </div>
 </div>
 
@@ -45,23 +83,24 @@
     document.addEventListener("DOMContentLoaded", function() {
         const ctx = document.getElementById("ganttChart").getContext("2d");
 
-        const tasks = JSON.parse(`[
-            {% for task in tasks %}
-                {
-                    "label": "{{ task.name|escapejs }}",
-                    "start": "{{ task.start_date|date:'Y-m-d' }}",
-                    "end": "{{ task.deadline|date:'Y-m-d' }}"
-                }{% if not forloop.last %},{% endif %}
-            {% endfor %}
+        const tasks = JSON.parse(`[ 
+            {% for task in project.tasks.all %} 
+                { 
+                    "label": "{{ task.title|escapejs }}", 
+                    "start": "{{ task.start_date|date:'Y-m-d' }}", 
+                    "end": "{{ task.deadline|date:'Y-m-d' }}" 
+                }{% if not forloop.last %},{% endif %} 
+            {% endfor %} 
         ]`);
 
-        // Преобразуем даты в объекты Date
+
+
         tasks.forEach(task => {
             task.start = new Date(task.start);
             task.end = new Date(task.end);
         });
 
-        console.log("Tasks:", tasks); // Отладочный вывод
+
 
         const labels = tasks.map(task => task.label);
         const startDates = tasks.map(task => task.start.getTime());
