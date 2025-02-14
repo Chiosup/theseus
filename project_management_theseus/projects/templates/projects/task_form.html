@@ -1,9 +1,44 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Добавить задачу в проект "{{ project.name }}"</h2>
+<h2>Добавить задачу в проект "{{ project.title }}"</h2>
+
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+    
+    <label for="id_title">Название:</label>
+    {{ form.title }}
+
+    <label for="id_description">Описание:</label>
+    {{ form.description }}
+
+    <label for="id_start_date">Дата начала:</label>
+    <input type="date" name="start_date" id="id_start_date" value="{{ form.start_date.value|default:'' }}">
+
+    <label for="id_end_date">Дата окончания:</label>
+    <input type="date" name="end_date" id="id_end_date" value="{{ form.end_date.value|default:'' }}">
+
+    <label for="id_due_date">Срок выполнения:</label>
+    <input type="date" name="due_date" id="id_due_date" value="{{ form.due_date.value|default:'' }}" readonly>
+
+    <label for="id_status">Статус:</label>
+    {{ form.status }}
+
+    <label for="id_priority">Приоритет:</label>
+    {{ form.priority }}
+
+    <label for="id_assigned_to">Исполнители:</label>
+    {{ form.assigned_to }}
+
+    <label for="id_previous_task">Предыдущая задача:</label>
+    {{ form.previous_task }}
+
     <button type="submit" class="btn btn-primary">Добавить</button>
 </form>
+
+<script>
+    document.getElementById("id_end_date").addEventListener("change", function() {
+        document.getElementById("id_due_date").value = this.value;
+    });
+</script>
+
 {% endblock %}

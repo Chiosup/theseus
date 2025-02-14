@@ -10,7 +10,29 @@
     <a href="{% url 'create_task' project.id %}" class="btn btn-success">Добавить задачу</a>
 {% endif %}
 
+<!-- Стили для разметки -->
+<style>
+    .task-container {
+        display: flex;
+        gap: 20px; /* Расстояние между колонками */
+    }
+
+    .task-list {
+        flex: 1; /* Занимает 50% ширины */
+    }
+
+    #gantt-container {
+        flex: 1; /* Занимает 50% ширины */
+    }
+
+    #gantt {
+        width: 100%;
+        height: 500px; /* Высота диаграммы */
+    }
+</style>
+
 <div class="task-container">
+    <!-- Список задач -->
     <div class="task-list">
         <h3>Задачи в процессе</h3>
         <ul>
@@ -28,7 +50,7 @@
                 <p>Нет задач в процессе.</p>
             {% endfor %}
         </ul>
-        
+
         <h3>Завершенные задачи</h3>
         <ul>
             {% for task in tasks %}
@@ -41,7 +63,7 @@
                 <p>Нет завершенных задач.</p>
             {% endfor %}
         </ul>
-        
+
         <h3>Ожидающие выполнения</h3>
         <ul>
             {% for task in tasks %}
@@ -58,76 +80,73 @@
                 <p>Нет ожидающих выполнения задач.</p>
             {% endfor %}
         </ul>
-        
     </div>
-<!-- Подключаем Frappe Gantt -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css">
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.min.js"></script>
 
-    <div id="gantt-container">
-        <h3>Диаграмма Ганта</h3>
-        <script>
-            console.log("Проверяем функцию: ", typeof renderGanttChart);
-            console.log("Frappe Gantt:", typeof Gantt);
-            document.addEventListener("DOMContentLoaded", function () {
-                console.log("Страница загружена, вызываем рендер диаграммы.");
-                renderGanttChart(tasksData);
-            });
-        </script>
-        
-        
-    </div>
+ <!-- Диаграмма Ганта -->
+ <div id="gantt-container">
+    <h3>Диаграмма Ганта</h3>
+    <div id="gantt_chart"></div>
+</div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const ctx = document.getElementById("ganttChart").getContext("2d");
+<!-- Подключаем Google Charts -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function () {
+    google.charts.load("current", { packages: ["gantt"] });
+    google.charts.setOnLoadCallback(drawGanttChart);
 
-        const tasks = JSON.parse(`[ 
-            {% for task in project.tasks.all %} 
-                { 
-                    "label": "{{ task.title|escapejs }}", 
-                    "start": "{{ task.start_date|date:'Y-m-d' }}", 
-                    "end": "{{ task.deadline|date:'Y-m-d' }}" 
-                }{% if not forloop.last %},{% endif %} 
-            {% endfor %} 
-        ]`);
+    function drawGanttChart() {
+        var container = document.getElementById("gantt_chart");
+        if (!container) {
+            console.error("Не найден контейнер #gantt_chart.");
+            return;
+        }
 
+        var data = new google.visualization.DataTable();
+        data.addColumn("string", "Task ID");
+        data.addColumn("string", "Task Name");
+        data.addColumn("string", "Resource");
+        data.addColumn("date", "Start Date");
+        data.addColumn("date", "End Date");
+        data.addColumn("number", "Duration");
+        data.addColumn("number", "Percent Complete");
+        data.addColumn("string", "Dependencies");
 
+        // JSON с задачами
+        var tasksData = JSON.parse('{{ tasks_json|escapejs }}');
 
-        tasks.forEach(task => {
-            task.start = new Date(task.start);
-            task.end = new Date(task.end);
-        });
+        tasksData.forEach(task => {
+            let startDate = task.start ? new Date(task.start) : null;
+let endDate = task.end ? new Date(task.end) : null;
 
+            let progress = task.status === "done" ? 100 : task.status === "in_progress" ? 50 : 0;
 
-
-        const labels = tasks.map(task => task.label);
-        const startDates = tasks.map(task => task.start.getTime());
-        const endDates = tasks.map(task => task.end.getTime());
-
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Сроки выполнения",
-                    backgroundColor: "rgba(54, 162, 235, 0.5)",
-                    data: startDates.map((start, i) => ({
-                        x: labels[i],
-                        y: [start, endDates[i]]
-                    }))
-                }]
-            },
-            options: {
-                scales: {
-                    x: { type: "category" },
-                    y: { type: "time", time: { unit: "day" } }
-                }
+            if (startDate && endDate) {
+                data.addRow([
+                    task.id.toString(),
+                    task.name,
+                    "Task",
+                    startDate,
+                    endDate,
+                    null,
+                    progress,
+                    null
+                ]);
             }
         });
-    });
+
+        var options = {
+            height: 500,
+            gantt: {
+                trackHeight: 30,
+                barHeight: 20
+            }
+        };
+
+        var chart = new google.visualization.Gantt(container);
+        chart.draw(data, options);
+    }
+});
 </script>
-
-
 {% endblock %}

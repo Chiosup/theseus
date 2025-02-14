@@ -49,13 +49,17 @@ def project_detail(request, project_id):
             "name": task.title,
             "start": task.start_date.strftime("%Y-%m-%d") if task.start_date else None,
             "end": task.end_date.strftime("%Y-%m-%d") if task.end_date else None,
-            "progress": 100 if task.status == "Завершено" else (50 if task.status == "В процессе" else 0)
+            "progress": 100 if task.status == "done" else (50 if task.status == "in_progress" else 0)
         })
+
+    tasks_json = json.dumps(tasks_data, ensure_ascii=False)  # Генерация JSON
+
+    print("DEBUG JSON:", tasks_json)  # Выведи в консоль сервера для отладки
 
     return render(request, 'projects/project_detail.html', {
         "project": project,
         "tasks": tasks,  # Передаем задачи для списка
-        "tasks_json": json.dumps(tasks_data)  # Передаем JSON для диаграммы Ганта
+        "tasks_json": tasks_json  # Передаем JSON для диаграммы Ганта
     })
 
 @login_required
@@ -88,6 +92,14 @@ def create_task(request, project_id):
         form = TaskForm(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
+
+            # Устанавливаем даты, если их нет
+            if not task.start_date:
+                task.start_date = now().date()
+            if not task.end_date:
+                task.end_date = task.start_date + timedelta(days=7)
+            task.due_date = task.end_date  # Устанавливаем due_date = end_date
+
             task.project = project
             task.save()
             form.save_m2m()  # Сохранение исполнителей
@@ -96,6 +108,7 @@ def create_task(request, project_id):
         form = TaskForm()
 
     return render(request, 'projects/task_form.html', {'form': form, 'project': project})
+
 
 @login_required
 def update_task_status(request, task_id):
