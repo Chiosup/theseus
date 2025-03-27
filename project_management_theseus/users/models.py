@@ -1,18 +1,20 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-# Create your models here.
+
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Администратор'),
+        ('director', 'Руководитель'),
         ('manager', 'Менеджер'),
         ('employee', 'Сотрудник'),
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
+    
     def save(self, *args, **kwargs):
-        """Автоматически задаем is_staff в зависимости от роли"""
-        if self.role == 'admin':
+        """Автоматически задаем is_staff и is_superuser в зависимости от роли"""
+        if self.role in ['admin', 'director']:
             self.is_staff = True
-            self.is_superuser = True  # Администраторы имеют полный доступ
+            self.is_superuser = True  # Администраторы и руководители имеют полный доступ
         else:
             self.is_staff = False  # Запрещаем доступ к админке для менеджеров и сотрудников
             self.is_superuser = False

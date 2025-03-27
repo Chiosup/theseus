@@ -6,8 +6,15 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseForbidden
 import json
-
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import get_user_model
+import openpyxl
+from django.utils import timezone
+from django.http import HttpResponse
 @login_required
+
 def edit_project(request, project_id):
     project = get_object_or_404(Project, id=project_id, creator=request.user)  # Только менеджер может редактировать
     
@@ -161,3 +168,99 @@ def revert_to_in_progress(request, task_id):
         task.status = 'in_progress'
         task.save()
     return redirect('task_detail', task_id=task.id)
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_exempt
+
+def update_task_status_ajax(request, task_id):
+    try:
+        task = Task.objects.get(id=task_id)
+        
+        # Проверка прав
+        has_permission = (
+            request.user in task.assigned_to.all() or
+            request.user == task.project.creator or
+            request.user.is_superuser
+        )
+        
+        if not has_permission:
+            return JsonResponse({'error': 'У вас нет прав для изменения этой задачи'}, status=403)
+        
+        data = json.loads(request.body)
+        new_status = data.get('status')
+        
+        # Проверка допустимых статусов (обратите внимание на in_progress)
+        valid_statuses = ['new', 'in_progress', 'done']
+        if new_status not in valid_statuses:
+            return JsonResponse(
+                {'error': f'Недопустимый статус задачи. Допустимые: {", ".join(valid_statuses)}'}, 
+                status=400
+            )
+        
+        # Обновление статуса и дат
+        task.status = new_status
+        if new_status == 'in_progress' and not task.start_date:
+            task.start_date = timezone.now().date()
+        elif new_status == 'done':
+            task.end_date = timezone.now().date()
+        task.save()
+        
+        return JsonResponse({
+            'success': True,
+            'new_status': task.status,
+            'status_display': task.get_status_display(),
+            'start_date': task.start_date.strftime('%Y-%m-%d') if task.start_date else None,
+            'end_date': task.end_date.strftime('%Y-%m-%d') if task.end_date else None
+        })
+    
+    except Task.DoesNotExist:
+        return JsonResponse({'error': 'Задача не найдена'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+
+User = get_user_model()
+
+def employee_list(request):
+    employees = User.objects.all().order_by('last_name', 'first_name')
+    
+    employee_data = []
+    for employee in employees:
+        # Получаем все задачи сотрудника
+        tasks = Task.objects.filter(assigned_to=employee)
+        
+        # Считаем количество задач по статусам
+        total_tasks = tasks.count()
+        active_tasks = tasks.filter(status='in_progress').count()
+        
+        # Вычисляем процент загрузки
+        progress = 0
+        if total_tasks > 0:
+            progress = (active_tasks / total_tasks) * 100
+
+        task_counts = {
+            'total': total_tasks,
+            'new': tasks.filter(status='new').count(),
+            'in_progress': active_tasks,
+            'done': tasks.filter(status='done').count(),
+            'overdue': tasks.filter(due_date__lt=timezone.now().date(), status__in=['new', 'in_progress']).count()
+        }
+        
+        # Получаем проекты сотрудника
+        projects = employee.projects.all().distinct()
+        
+        employee_data.append({
+            'employee': employee,
+            'task_counts': task_counts,
+            'projects': projects,
+            'progress': progress,  # Добавляем вычисленный прогресс
+            'overdue_tasks': tasks.filter(due_date__lt=timezone.now().date(), status__in=['new', 'in_progress']),
+            'all_tasks': tasks
+        })
+    
+    return render(request, 'projects/employee_list.html', {
+        'employee_data': employee_data,
+        'today': timezone.now().date()
+    })
