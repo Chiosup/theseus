@@ -40,8 +40,26 @@ INSTALLED_APPS = [
     'users',
     'projects',
     'main',
+    'channels',
+    'rest_framework',
+    'chat',
 ]
 
+
+# Настройки Channels
+ASGI_APPLICATION = 'project_management_theseus'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+# Ограничения файлов
+DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024  # 30MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

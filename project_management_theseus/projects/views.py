@@ -190,7 +190,7 @@ def update_task_status_ajax(request, task_id):
         data = json.loads(request.body)
         new_status = data.get('status')
         
-        # Проверка допустимых статусов (обратите внимание на in_progress)
+        # Проверка допустимых статусов
         valid_statuses = ['new', 'in_progress', 'done']
         if new_status not in valid_statuses:
             return JsonResponse(
@@ -198,12 +198,8 @@ def update_task_status_ajax(request, task_id):
                 status=400
             )
         
-        # Обновление статуса и дат
+        # Обновление только статуса (без изменения дат)
         task.status = new_status
-        if new_status == 'in_progress' and not task.start_date:
-            task.start_date = timezone.now().date()
-        elif new_status == 'done':
-            task.end_date = timezone.now().date()
         task.save()
         
         return JsonResponse({
@@ -218,7 +214,6 @@ def update_task_status_ajax(request, task_id):
         return JsonResponse({'error': 'Задача не найдена'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-    
 
 
 User = get_user_model()

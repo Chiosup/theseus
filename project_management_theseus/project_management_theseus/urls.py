@@ -24,4 +24,5 @@ urlpatterns = [
     path('projects/', include('projects.urls')),
     path('', include('main.urls')),
     path('tasks/<int:task_id>/update_status/', views.update_task_status_ajax),
+    path('chat/', include('chat.urls', namespace='chat')),
 ]

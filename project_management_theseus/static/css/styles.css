@@ -50,7 +50,103 @@ nav form button {
     padding: 0;
     font-family: inherit;
 }
+/* Стили для выпадающего меню */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
 
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    background: white;
+    min-width: 200px;
+    box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
+    z-index: 1000;
+    border-radius: 4px;
+    padding: 0.5rem 0;
+}
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.messages-container {
+    height: 500px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.my-message {
+    background-color: #e3f2fd;
+    margin-left: 20%;
+}
+
+.other-message {
+    background-color: #f1f1f1;
+    margin-right: 20%;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.message-content {
+    word-wrap: break-word;
+}
+
+.message-form {
+    margin-top: 20px;
+}
+
+.input-group {
+    display: flex;
+}
+
+.input-group input {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.dropdown-item:hover {
+    background: #f8f9fa;
+}
+
+.dropdown-item.unread {
+    font-weight: bold;
+}
+
+.unread-badge {
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    margin-left: 0.3rem;
+}
 nav form button:hover {
     text-decoration: underline;
 }
