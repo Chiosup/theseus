@@ -3,7 +3,7 @@
 <h2>Мои проекты</h2>
 
 {% if user.groups.all.0.name == "Менеджеры" %}
-    <a href="{% url 'create_project' %}" class="btn btn-primary">Добавить проект</a>
+    <a href="{% url 'create_project' %}" class="btn btn-custom">Добавить проект</a>
 {% endif %}
 
 <div class="project-grid">

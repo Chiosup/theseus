@@ -37,7 +37,7 @@ nav form {
     display: inline;
 }
 .logo img {
-    height: 50px; /* Задай нужный размер */
+    height: 50px; 
     width: auto;
 }
 nav form button {
