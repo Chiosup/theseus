@@ -3,7 +3,7 @@
 {% block content %}
 <div class="chat-container">
     <h2>Мои чаты</h2>
-    <a href="{% url 'chat:create_direct' %}" class="btn btn-primary">Новый чат</a>
+    <a href="{% url 'chat:create_direct' %}" class="btn btn-custom">Новый чат</a>
     
     <div class="chat-list">
         {% for chat in chats %}

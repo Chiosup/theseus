@@ -26,7 +26,7 @@
             
             <!-- Обновленная часть с сообщениями -->
             <div class="nav-dropdown">
-                <a href="#" class="nav-link dropdown-toggle" id="chatDropdown" data-bs-toggle="dropdown">
+                <a href="#" class="navbar button.nav-link" id="chatDropdown" data-bs-toggle="dropdown">
                     Сообщения
                     {% with unread=user.unread_messages.count %}
                         {% if unread %}
