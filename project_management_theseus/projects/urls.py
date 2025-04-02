@@ -13,7 +13,8 @@ urlpatterns = [
     path('tasks/<int:task_id>/complete/', complete_task, name='complete_task'),
     path('tasks/<int:task_id>/revert_to_pending/', revert_to_pending, name='revert_to_pending'),
     path('tasks/<int:task_id>/revert_to_in_progress/', revert_to_in_progress, name='revert_to_in_progress'),
-     path('tasks/<int:task_id>/update_status/', views.update_task_status_ajax, name='update_task_status_ajax'),
+    path('tasks/<int:task_id>/update_status/', views.update_task_status_ajax, name='update_task_status_ajax'),
     path('employees/', views.employee_list, name='employee_list'),
-   
+    path('task/<int:task_id>/edit/', views.edit_task, name='edit_task'),
+   path('tasks/<int:task_id>/delete/', views.delete_task, name='delete_task'),
 ]

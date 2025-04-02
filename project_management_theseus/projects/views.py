@@ -168,7 +168,50 @@ def revert_to_in_progress(request, task_id):
         task.status = 'in_progress'
         task.save()
     return redirect('task_detail', task_id=task.id)
+def create_task(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.project = project
+            task.save()
+            form.save_m2m()  # Если есть ManyToMany-поля (например, assigned_to)
+            return redirect('task_detail', task_id=task.id)  # Или другой редирект
+    else:
+        form = TaskForm()
+    
+    return render(request, 'projects/task_form.html', {
+        'form': form,
+        'project': project,  # Передаем проект в шаблон
+    })
 
+def edit_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    
+    if request.method == 'POST':
+        form = TaskForm(request.POST, instance=task)
+        if form.is_valid():
+            form.save()
+            return redirect('task_detail', task_id=task.id)
+    else:
+        form = TaskForm(instance=task)
+    
+    return render(request, 'projects/task_form.html', {
+        'form': form,
+        'task': task,  # Передаем задачу в шаблон
+    })
+def delete_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    project_id = task.project.id
+    
+    if request.method == 'POST':
+        task.delete()
+        return redirect('project_detail', project_id=project_id)
+    
+    # Для GET-запросов можно вернуть на страницу задачи
+    return redirect('task_detail', task_id=task_id)
 @login_required
 @require_http_methods(["POST"])
 @csrf_exempt

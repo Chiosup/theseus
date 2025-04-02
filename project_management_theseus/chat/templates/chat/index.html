@@ -1,21 +1,280 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="chat-container">
-    <h2>Мои чаты</h2>
-    <a href="{% url 'chat:create_direct' %}" class="btn btn-custom">Новый чат</a>
-    
-    <div class="chat-list">
-        {% for chat in chats %}
-            <div class="chat-item">
-                <a href="{% url 'chat:room' chat.id %}">
+<div class="slack-container">
+    <div class="slack-sidebar">
+        <div class="sidebar-header">
+            <h2>Мои чаты</h2>
+            <a href="{% url 'chat:create_direct' %}" class="new-chat-btn">
+                <i class="fas fa-plus"></i> Новый чат
+            </a>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" placeholder="Поиск чатов...">
+            <i class="fas fa-search"></i>
+        </div>
+        
+        <div class="chat-list">
+            {% for chat in chats %}
+            <a href="{% url 'chat:room' chat.id %}" class="chat-item {% if forloop.first %}active{% endif %}">
+                <div class="chat-avatar">
+                    {% if chat.is_direct %}
+                    <i class="fas fa-user"></i>
+                    {% else %}
+                    <i class="fas fa-users"></i>
+                    {% endif %}
+                </div>
+                <div class="chat-info">
                     <h3>{{ chat.get_display_name }}</h3>
-                    <small>Последнее сообщение: {{ chat.last_msg_time|date:"d.m.Y H:i" }}</small>
-                </a>
+                    <p class="last-message-preview">
+                        {% if chat.last_message %}
+                        {{ chat.last_message.content|truncatechars:30 }}
+                        {% else %}
+                        Нет сообщений
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="chat-meta">
+                    <span class="last-time">{{ chat.last_msg_time|date:"H:i" }}</span>
+                    {% if chat.unread_count %}
+                    <span class="unread-badge">{{ chat.unread_count }}</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% empty %}
+            <div class="empty-state">
+                <i class="far fa-comment-dots"></i>
+                <p>У вас пока нет чатов</p>
             </div>
-        {% empty %}
-            <p>У вас пока нет чатов</p>
-        {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="slack-main">
+        <div class="welcome-screen">
+            <div class="welcome-content">
+                
+                <h2>Выберите чат для начала общения</h2>
+                <p>Или создайте новый чат, нажав на кнопку выше</p>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+:root {
+    --slack-purple: #4A154B;
+    --slack-dark: #1D1C1D;
+    --slack-light: #F8F8F8;
+    --slack-blue: #1264A3;
+    --slack-green: #2BAC76;
+    --slack-yellow: #ECB22E;
+    --slack-red: #E01E5A;
+}
+
+.slack-container {
+    display: flex;
+    height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.slack-sidebar {
+    width: 260px;
+    background-color: var(--slack-dark);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #3F0E40;
+}
+
+.slack-main {
+    flex: 1;
+    background-color: var(--slack-light);
+}
+
+.sidebar-header {
+    padding: 15px;
+    border-bottom: 1px solid #3F0E40;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.new-chat-btn {
+    background-color: var(--slack-purple);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.new-chat-btn:hover {
+    background-color: #3D0E3D;
+}
+
+.search-box {
+    padding: 15px;
+    position: relative;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 10px 8px 30px;
+    border-radius: 4px;
+    border: none;
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.search-box i {
+    position: absolute;
+    left: 25px;
+    top: 23px;
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chat-item {
+    display: flex;
+    padding: 12px 15px;
+    align-items: center;
+    text-decoration: none;
+    color: white;
+    border-left: 3px solid transparent;
+}
+
+.chat-item:hover {
+    background-color: #350D36;
+}
+
+.chat-item.active {
+    background-color: #1164A3;
+    border-left: 3px solid white;
+}
+
+.chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background-color: var(--slack-purple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.chat-avatar i {
+    font-size: 16px;
+}
+
+.chat-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-info h3 {
+    margin: 0 0 3px 0;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.last-message-preview {
+    margin: 0;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-left: 10px;
+}
+
+.last-time {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 3px;
+}
+
+.unread-badge {
+    background-color: var(--slack-green);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    padding: 0 20px;
+}
+
+.empty-state i {
+    font-size: 40px;
+    margin-bottom: 15px;
+}
+
+.welcome-screen {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-content {
+    text-align: center;
+    max-width: 500px;
+}
+
+.welcome-image {
+    max-width: 300px;
+    margin-bottom: 30px;
+}
+
+.welcome-content h2 {
+    color: var(--slack-dark);
+    margin-bottom: 15px;
+}
+
+.welcome-content p {
+    color: #666;
+    font-size: 16px;
+}
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 {% endblock %}

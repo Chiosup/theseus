@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Добавить задачу в проект "{{ project.title }}"</h2>
+<h2>{% if task %}Редактировать задачу "{{ task.title }}"{% else %}Создать новую задачу{% endif %}</h2>
 
 <form method="post">
     {% csrf_token %}
@@ -32,7 +32,13 @@
     <label for="id_previous_task">Предыдущая задача:</label>
     {{ form.previous_task }}
 
-    <button type="submit" class="btn btn-primary">Добавить</button>
+    <button type="submit" class="btn btn-primary">{% if task %}Сохранить{% else %}Создать{% endif %}</button>
+    
+    <!-- Исправленная кнопка "Отмена" -->
+    <a href="{% if task %}{% url 'task_detail' task.id %}{% else %}{% url 'project_detail' project.id %}{% endif %}" 
+       class="btn btn-secondary">
+        Отмена
+    </a>
 </form>
 
 <script>
@@ -40,5 +46,4 @@
         document.getElementById("id_due_date").value = this.value;
     });
 </script>
-
 {% endblock %}
