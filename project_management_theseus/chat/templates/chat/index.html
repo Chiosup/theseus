@@ -2,133 +2,162 @@
 {% load static %}
 
 {% block content %}
-<div class="slack-container">
-    <div class="slack-sidebar">
+<div class="chat-app">
+    <!-- Сайдбар с чатами -->
+    <div class="chat-sidebar">
         <div class="sidebar-header">
             <h2>Мои чаты</h2>
             <a href="{% url 'chat:create_direct' %}" class="new-chat-btn">
-                <i class="fas fa-plus"></i> Новый чат
+                <i class="fas fa-plus"></i>
             </a>
         </div>
         
         <div class="search-box">
-            <input type="text" placeholder="Поиск чатов...">
             <i class="fas fa-search"></i>
+            <input type="text" placeholder="Поиск чатов..." id="chat-search">
         </div>
         
         <div class="chat-list">
             {% for chat in chats %}
-            <a href="{% url 'chat:room' chat.id %}" class="chat-item {% if forloop.first %}active{% endif %}">
+            <div class="chat-item {% if forloop.first %}active{% endif %}" 
+                 data-chat-id="{{ chat.id }}" 
+                 onclick="loadChat({{ chat.id }}, '{{ chat.get_display_name|escapejs }}')">
                 <div class="chat-avatar">
-                    {% if chat.is_direct %}
+                    {% if chat.type == 'direct' %}
                     <i class="fas fa-user"></i>
                     {% else %}
                     <i class="fas fa-users"></i>
                     {% endif %}
                 </div>
                 <div class="chat-info">
-                    <h3>{{ chat.get_display_name }}</h3>
-                    <p class="last-message-preview">
-                        {% if chat.last_message %}
-                        {{ chat.last_message.content|truncatechars:30 }}
+                    <div class="chat-name-time">
+                        <h3>{{ chat.get_display_name }}</h3>
+                        {% if chat.last_msg_time %}
+                        <span class="last-time">{{ chat.last_msg_time|date:"H:i" }}</span>
+                        {% endif %}
+                    </div>
+                    <p class="last-message">
+                        {% if chat.last_message_content %}
+                            {% if chat.last_message_sender == current_user.username %}
+                                Вы: {{ chat.last_message_content|truncatechars:25 }}
+                            {% else %}
+                                {{ chat.last_message_sender|truncatechars:10 }}: {{ chat.last_message_content|truncatechars:25 }}
+                            {% endif %}
                         {% else %}
-                        Нет сообщений
+                            Нет сообщений
                         {% endif %}
                     </p>
                 </div>
-                <div class="chat-meta">
-                    <span class="last-time">{{ chat.last_msg_time|date:"H:i" }}</span>
-                    {% if chat.unread_count %}
-                    <span class="unread-badge">{{ chat.unread_count }}</span>
-                    {% endif %}
-                </div>
-            </a>
+                {% if chat.unread_count %}
+                <span class="unread-badge">{{ chat.unread_count }}</span>
+                {% endif %}
+            </div>
             {% empty %}
             <div class="empty-state">
                 <i class="far fa-comment-dots"></i>
                 <p>У вас пока нет чатов</p>
+                <a href="{% url 'chat:create_direct' %}" class="btn">Создать чат</a>
             </div>
             {% endfor %}
         </div>
     </div>
     
-    <div class="slack-main">
-        <div class="welcome-screen">
+    <!-- Основная область с чатом -->
+    <div class="chat-main" id="chat-main">
+        <div class="welcome-screen" id="welcome-screen">
             <div class="welcome-content">
-                
+                <i class="far fa-comments"></i>
                 <h2>Выберите чат для начала общения</h2>
-                <p>Или создайте новый чат, нажав на кнопку выше</p>
+                <p>Или создайте новый чат</p>
+            </div>
+        </div>
+        
+        <div class="active-chat" id="active-chat" style="display: none;">
+            <div class="chat-header">
+                <h3 id="current-chat-name"></h3>
+            </div>
+            
+            <div class="messages-container" id="messages-container">
+                <!-- Сообщения будут здесь -->
+            </div>
+            
+            <div class="message-input">
+                <form id="message-form" onsubmit="sendMessage(event)">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <button type="button" class="attach-btn" onclick="document.getElementById('file-input').click()">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="file" id="file-input" style="display: none;">
+                        <input type="text" name="content" placeholder="Написать сообщение..." required>
+                        <button type="submit" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <style>
-:root {
-    --slack-purple: #4A154B;
-    --slack-dark: #1D1C1D;
-    --slack-light: #F8F8F8;
-    --slack-blue: #1264A3;
-    --slack-green: #2BAC76;
-    --slack-yellow: #ECB22E;
-    --slack-red: #E01E5A;
-}
-
-.slack-container {
+/* Основные стили */
+.chat-app {
     display: flex;
     height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.slack-sidebar {
-    width: 260px;
-    background-color: var(--slack-dark);
+/* Сайдбар */
+.chat-sidebar {
+    width: 300px;
+    background: #1c2440;
     color: white;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #3F0E40;
-}
-
-.slack-main {
-    flex: 1;
-    background-color: var(--slack-light);
+    border-right: 1px solid #2d3b5b;
 }
 
 .sidebar-header {
     padding: 15px;
-    border-bottom: 1px solid #3F0E40;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid #2d3b5b;
 }
 
 .sidebar-header h2 {
     margin: 0;
     font-size: 18px;
-    font-weight: 900;
 }
 
 .new-chat-btn {
-    background-color: var(--slack-purple);
     color: white;
+    background: #1c1e7c;
     border: none;
-    border-radius: 4px;
-    padding: 5px 10px;
-    font-size: 14px;
-    cursor: pointer;
-    text-decoration: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
-    gap: 5px;
-}
-
-.new-chat-btn:hover {
-    background-color: #3D0E3D;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .search-box {
-    padding: 15px;
+    padding: 10px 15px;
     position: relative;
+    border-bottom: 1px solid #2d3b5b;
+}
+
+.search-box i {
+    position: absolute;
+    left: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8e9dbd;
 }
 
 .search-box input {
@@ -136,16 +165,8 @@
     padding: 8px 10px 8px 30px;
     border-radius: 4px;
     border: none;
-    background-color: rgba(255,255,255,0.2);
+    background: #2d3b5b;
     color: white;
-}
-
-.search-box i {
-    position: absolute;
-    left: 25px;
-    top: 23px;
-    color: rgba(255,255,255,0.7);
-    font-size: 14px;
 }
 
 .chat-list {
@@ -153,29 +174,30 @@
     overflow-y: auto;
 }
 
+/* Элементы чата */
 .chat-item {
     display: flex;
-    padding: 12px 15px;
+    padding: 12px;
     align-items: center;
-    text-decoration: none;
-    color: white;
+    cursor: pointer;
     border-left: 3px solid transparent;
+    position: relative;
 }
 
 .chat-item:hover {
-    background-color: #350D36;
+    background: #2d3b5b;
 }
 
 .chat-item.active {
-    background-color: #1164A3;
+    background: #1164a3;
     border-left: 3px solid white;
 }
 
 .chat-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 4px;
-    background-color: var(--slack-purple);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #16392b;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -192,16 +214,28 @@
     min-width: 0;
 }
 
-.chat-info h3 {
-    margin: 0 0 3px 0;
-    font-size: 15px;
-    font-weight: 700;
+.chat-name-time {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.chat-name-time h3 {
+    margin: 0;
+    font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 150px;
 }
 
-.last-message-preview {
+.last-time {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+}
+
+.last-message {
     margin: 0;
     font-size: 13px;
     color: rgba(255,255,255,0.7);
@@ -210,42 +244,25 @@
     text-overflow: ellipsis;
 }
 
-.chat-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    margin-left: 10px;
-}
-
-.last-time {
-    font-size: 12px;
-    color: rgba(255,255,255,0.5);
-    margin-bottom: 3px;
-}
-
 .unread-badge {
-    background-color: var(--slack-green);
+    background: #113023;
     color: white;
-    border-radius: 10px;
-    padding: 2px 6px;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 11px;
     font-weight: bold;
 }
 
-.empty-state {
+/* Основная область чата */
+.chat-main {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 200px;
-    color: rgba(255,255,255,0.5);
-    text-align: center;
-    padding: 0 20px;
-}
-
-.empty-state i {
-    font-size: 40px;
-    margin-bottom: 15px;
+    background: #f8f9fa;
 }
 
 .welcome-screen {
@@ -253,28 +270,179 @@
     height: 100%;
     align-items: center;
     justify-content: center;
-}
-
-.welcome-content {
     text-align: center;
-    max-width: 500px;
 }
 
-.welcome-image {
-    max-width: 300px;
-    margin-bottom: 30px;
+.welcome-content i {
+    font-size: 60px;
+    color: #ddd;
+    margin-bottom: 20px;
 }
 
 .welcome-content h2 {
-    color: var(--slack-dark);
-    margin-bottom: 15px;
+    color: #333;
+    margin-bottom: 10px;
 }
 
 .welcome-content p {
+    color: #777;
+}
+
+.active-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-header {
+    padding: 15px;
+    background: white;
+    border-bottom: 1px solid #eee;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.messages-container {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f0f2f5;
+}
+
+.message {
+    margin-bottom: 15px;
+    max-width: 70%;
+}
+
+.message-content {
+    padding: 10px 15px;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    display: inline-block;
+}
+
+.my-message {
+    margin-left: auto;
+}
+
+.my-message .message-content {
+    background: #d9fdd3;
+}
+
+.message-input {
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #eee;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background: #f0f2f5;
+    border-radius: 20px;
+    padding: 5px 15px;
+}
+
+.input-group input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    outline: none;
+}
+
+.attach-btn, .send-btn {
+    background: none;
+    border: none;
     color: #666;
-    font-size: 16px;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 5px;
+}
+
+.send-btn {
+    color: #2bac76;
 }
 </style>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script>
+let currentChatId = null;
+
+// Загрузка чата
+function loadChat(chatId, chatName) {
+    currentChatId = chatId;
+    
+    // Обновляем активный чат в списке
+    document.querySelectorAll('.chat-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-chat-id') == chatId) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Показываем область чата
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('active-chat').style.display = 'flex';
+    document.getElementById('current-chat-name').textContent = chatName;
+    
+    // Загружаем сообщения
+    fetch(`/chat/${chatId}/messages/`)
+        .then(response => response.json())
+        .then(messages => {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = messages.map(msg => `
+                <div class="message ${msg.is_my ? 'my-message' : ''}">
+                    <div class="message-content">${msg.content}</div>
+                </div>
+            `).join('');
+            
+            // Прокрутка вниз
+            container.scrollTop = container.scrollHeight;
+        });
+}
+
+// Отправка сообщения
+function sendMessage(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    fetch(`/chat/${currentChatId}/send/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    }).then(response => {
+        if (response.ok) {
+            form.reset();
+            loadChat(currentChatId, document.getElementById('current-chat-name').textContent);
+        }
+    });
+}
+
+// Поиск чатов
+document.getElementById('chat-search').addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    
+    if (query.length > 0) {
+        fetch(`/chat/search/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(chats => {
+                // Обновляем список чатов
+                // Реализация зависит от вашего API
+            });
+    }
+});
+
+// Инициализация - загружаем первый чат, если есть
+document.addEventListener('DOMContentLoaded', function() {
+    const firstChat = document.querySelector('.chat-item');
+    if (firstChat) {
+        const chatId = firstChat.getAttribute('data-chat-id');
+        const chatName = firstChat.querySelector('h3').textContent;
+        loadChat(chatId, chatName);
+    }
+});
+</script>
 {% endblock %}

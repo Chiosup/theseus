@@ -2,21 +2,33 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import ChatRoom, Message
 from django.contrib.auth import get_user_model
-from django.db.models import Max
+from django.db.models import Max,Subquery, OuterRef, Q, Count
+from django.http import JsonResponse
+from django.db import models
+
 @login_required
 def index(request):
-    """Главная страница чатов"""
-    if not request.user.is_authenticated:
-        return redirect('login')
-    
-    # Используем annotate для добавления времени последнего сообщения
     chats = ChatRoom.objects.filter(
         participants=request.user
     ).annotate(
-        last_msg_time=Max('messages__timestamp')
-    ).order_by('-last_msg_time')
+        last_msg_time=Max('messages__timestamp'),
+        last_message_content=Subquery(
+            Message.objects.filter(room=OuterRef('pk'))
+            .order_by('-timestamp')
+            .values('content')[:1]
+        ),
+        last_message_sender=Subquery(
+            Message.objects.filter(room=OuterRef('pk'))
+            .order_by('-timestamp')
+            .values('sender__username')[:1]
+        )
+    ).order_by('-last_msg_time').prefetch_related('participants')
     
-    return render(request, 'chat/index.html', {'chats': chats})
+    return render(request, 'chat/index.html', {
+        'chats': chats,
+        'current_user': request.user
+    })
+
 def create_direct_chat(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -67,3 +79,54 @@ def room_view(request, room_id):
         'room': room,
         'messages': messages
     })
+def chat_messages(request, room_id):
+    room = get_object_or_404(ChatRoom, id=room_id)
+    messages = room.messages.order_by('timestamp').values(
+        'content',
+        'timestamp',
+        sender_name=models.F('sender__username'),
+        is_my=models.ExpressionWrapper(
+            models.Q(sender=request.user),
+            output_field=models.BooleanField()
+        )
+    )
+    return JsonResponse(list(messages), safe=False)
+
+def search_chats(request):
+    query = request.GET.get('q', '')
+    chats = ChatRoom.objects.filter(
+        participants=request.user,
+        display_name__icontains=query
+    ).annotate(
+        last_msg_time=Max('messages__timestamp'),
+        last_message=Subquery(
+            Message.objects.filter(room=models.OuterRef('pk'))
+            .order_by('-timestamp')
+            .values('content')[:1]
+        )
+    )
+    return JsonResponse([
+        {
+            'id': chat.id,
+            'name': chat.get_display_name(),
+            'last_message': chat.last_message,
+            'time': chat.last_msg_time.strftime("%H:%M")
+        } for chat in chats
+    ], safe=False)
+
+
+def send_message(request, room_id):
+    room = get_object_or_404(ChatRoom, id=room_id)
+    message = Message.objects.create(
+        room=room,
+        sender=request.user,
+        content=request.POST.get('content')
+    )
+    
+    if 'file' in request.FILES:
+        Attachment.objects.create(
+            message=message,
+            file=request.FILES['file']
+        )
+    
+    return JsonResponse({'status': 'ok'})
