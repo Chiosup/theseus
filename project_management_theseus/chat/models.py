@@ -25,36 +25,18 @@ class ChatRoom(models.Model):
                               null=True, 
                               blank=True,
                               related_name='created_chats')
+    def get_last_message(self):
+     return self.messages.order_by('-timestamp').first()
 
     def get_display_name(self):
-        try:
-            User = get_user_model()
-            
-            if self.type == 'direct':
-                # Получаем текущего пользователя из запроса (если доступен)
-                current_user = getattr(self, '_current_user', None)
-                
-                # Если есть creator, используем его для поиска собеседника
-                if self.creator:
-                    other_user = self.participants.exclude(id=self.creator.id).first()
-                # Иначе пытаемся исключить текущего пользователя
-                elif current_user:
-                    other_user = self.participants.exclude(id=current_user.id).first()
-                # Если ничего не помогло, берем первого попавшегося участника
-                else:
-                    other_user = self.participants.first()
-                
-                if other_user:
-                    return f"Чат с {other_user.get_full_name() or other_user.username}"
-                return "Личный чат"
-            
-            # Для проектных чатов
+        if self.type == 'direct':
+            # Получаем участников чата, исключая текущего пользователя
+            other_users = self.participants.exclude(id=self.creator.id if self.creator else None)
+            other_user = other_users.first()
+            return f"Чат с {other_user.get_full_name()}" if other_user else "Личный чат"
+        elif self.type == 'project':
             return f"Проектный чат: {self.project.title if self.project else 'Общий'}"
-        
-        except Exception as e:
-            # Логируем ошибку, но возвращаем безопасное значение
-            print(f"Error in get_display_name: {e}")
-            return "Чат"
+        return "Чат"
 
 class Message(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
@@ -63,6 +45,7 @@ class Message(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
     edited = models.BooleanField(default=False)
+    read = models.BooleanField(default=False)  # Добавьте это поле
 
     class Meta:
         ordering = ['timestamp']

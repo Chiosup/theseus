@@ -19,3 +19,7 @@ class CustomUser(AbstractUser):
             self.is_staff = False  # Запрещаем доступ к админке для менеджеров и сотрудников
             self.is_superuser = False
         super().save(*args, **kwargs)
+    def get_full_name(self):
+        """Возвращает полное имя пользователя"""
+        full_name = f"{self.last_name} {self.first_name}".strip()
+        return full_name if full_name else self.username
