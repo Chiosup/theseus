@@ -7,7 +7,7 @@
     <div class="chat-sidebar">
         <div class="sidebar-header">
             <h2>Мои чаты</h2>
-            <button class="new-chat-btn" onclick="showCreateChatModal()">
+            <button class="new-chat-btn">
                 <i class="fas fa-plus"></i>
             </button>
         </div>
@@ -15,7 +15,7 @@
         <!-- Модальное окно создания чата -->
         <div id="create-chat-modal" class="modal">
             <div class="modal-content">
-                <span class="close" onclick="hideCreateChatModal()">&times;</span>
+                <span class="close">&times;</span>
                 <h3>Новый чат</h3>
                 <form id="create-chat-form" method="post" action="{% url 'chat:create_direct' %}">
                     {% csrf_token %}
@@ -40,7 +40,7 @@
         <div class="chat-list">
             {% for chat in chats %}
             <div class="chat-item" data-chat-id="{{ chat.id }}" onclick="loadChat({{ chat.id }}, '{{ chat.get_display_name|escapejs }}')">
-                <div class="avatar-circle bg-primary mr-3">
+                <div class="avatar-circle">
                     <i class="fas fa-user-circle"></i>
                 </div>
                 <div class="chat-info">
@@ -63,43 +63,39 @@
     </div>
     
     <!-- Основная область с чатом -->
-    <div class="chat-main" id="chat-main">
+    <div class="chat-main">
         <div class="welcome-screen" id="welcome-screen">
             <div class="welcome-content">
                 <i class="far fa-comments"></i>
                 <h2>Выберите чат для начала общения</h2>
                 <p>Или создайте новый чат</p>
-                <button class="btn-primary" onclick="showCreateChatModal()">
+                <button class="btn-primary">
                     <i class="fas fa-plus"></i> Создать чат
                 </button>
             </div>
         </div>
         
-        <div class="active-chat" id="active-chat" style="display: none;">
+        <div class="active-chat" id="active-chat">
             <div class="chat-header">
                 <h2 id="current-chat-name">Название чата</h2>
             </div>
-            <div class="chat-messages-wrapper">
-                <div class="messages-container" id="messages-container">
-                    <!-- Сообщения будут здесь -->
-                </div>
+            
+            <div class="messages-container" id="messages-container">
+                <!-- Сообщения будут здесь -->
             </div>
             
-            <!-- Блок ввода сообщения (FIXED) -->
             <div class="message-input-container">
                 <form id="message-form">
                     {% csrf_token %}
-                    <div class="input-group">
+                    <div class="input-wrapper">
+                        <button type="button" class="file-upload-btn">
+                            <i class="fas fa-paperclip"></i>
+                            <input type="file" id="file-input">
+                        </button>
                         <input type="text" id="message-content" placeholder="Написать сообщение..." required>
-                        <div class="input-actions">
-                            <label for="file-input" class="file-upload-btn">
-                                <i class="fas fa-paperclip"></i>
-                                <input type="file" id="file-input" style="display:none;">
-                            </label>
-                            <button type="submit" class="send-message-btn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
+                        <button type="submit" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -112,26 +108,18 @@
     --primary-dark: #1c2440;
     --primary-yellow: #efb400;
     --background-light: #f8f9fa;
-    --sidebar-width: 260px;
-    --header-height: 60px;
-    --input-height: 70px;
+    --sidebar-width: 300px;
+    --message-bg: #f1f1f1;
+    --my-message-bg: #efb400;
+    --text-dark: #333;
+    --text-light: #777;
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden;
-}
-
+/* Базовые стили */
 .chat-app {
     display: flex;
     height: 100vh;
-    background: white;
+    font-family: 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Сайдбар */
@@ -141,55 +129,42 @@ body {
     color: white;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #ddd;
 }
-.chat-messages-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0; /* Важно для Firefox */
-}
-.message-input-container {
-    padding: 12px 16px;
-    background: #fff;
-    border-top: 1px solid #eaeaea;
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-}
+
 .sidebar-header {
-    padding: 15px;
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-header h2 {
     font-size: 18px;
     font-weight: 600;
+    margin: 0;
 }
 
 .new-chat-btn {
     background: var(--primary-yellow);
     color: var(--primary-dark);
     border: none;
-    border-radius: 50%;
     width: 32px;
     height: 32px;
+    border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s;
 }
 
 .new-chat-btn:hover {
-    opacity: 0.9;
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
 .search-box {
-    padding: 10px 15px;
+    padding: 15px;
     position: relative;
 }
 
@@ -198,38 +173,22 @@ body {
     left: 25px;
     top: 50%;
     transform: translateY(-50%);
-    color: rgba(255,255,255,0.6);
-}
-.send-message-btn {
-    background: var(--primary-yellow);
-    color: var(--primary-dark);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
+    color: rgba(255, 255, 255, 0.6);
 }
 
-.send-message-btn:hover {
-    opacity: 0.9;
-    transform: scale(1.05);
-}
 .search-box input {
     width: 100%;
     padding: 8px 10px 8px 30px;
-    border-radius: 4px;
+    border-radius: 20px;
     border: none;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: white;
     outline: none;
+    font-size: 14px;
 }
 
 .search-box input::placeholder {
-    color: rgba(255,255,255,0.6);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .chat-list {
@@ -247,28 +206,22 @@ body {
 }
 
 .chat-item:hover {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .chat-item.active {
-    background: rgba(239, 180, 0, 0.1);
-}
-.file-upload-btn {
-    color: #666;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 4px;
+    background: rgba(239, 180, 0, 0.15);
 }
 
-.chat-avatar {
+.avatar-circle {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 10px;
+    margin-right: 12px;
     color: var(--primary-yellow);
     font-size: 20px;
 }
@@ -281,7 +234,7 @@ body {
 .chat-info h3 {
     font-size: 14px;
     font-weight: 600;
-    margin-bottom: 3px;
+    margin: 0 0 4px 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -289,7 +242,8 @@ body {
 
 .last-message {
     font-size: 13px;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -297,7 +251,7 @@ body {
 
 .last-time {
     font-size: 11px;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     position: absolute;
     top: 12px;
     right: 15px;
@@ -324,8 +278,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    position: relative;  /* Важно для дочерних элементов */
+    background: white;
 }
 
 .welcome-screen {
@@ -339,6 +292,7 @@ body {
 .welcome-content {
     text-align: center;
     max-width: 400px;
+    padding: 20px;
 }
 
 .welcome-content i {
@@ -350,113 +304,125 @@ body {
 .welcome-content h2 {
     font-size: 24px;
     margin-bottom: 10px;
-    color: #333;
+    color: var(--text-dark);
 }
 
 .welcome-content p {
-    color: #666;
+    color: var(--text-light);
     margin-bottom: 20px;
 }
+
+.welcome-content .btn-primary {
+    padding: 10px 20px;
+}
+
 .active-chat {
-    display: flex;
+    display: none;
     flex-direction: column;
     height: 100%;
-    position: relative;
 }
 
 .chat-header {
     padding: 15px 20px;
     border-bottom: 1px solid #eee;
-    display: flex;
-    align-items: center;
 }
 
 .chat-header h2 {
     font-size: 18px;
     font-weight: 600;
+    margin: 0;
+    color: var(--text-dark);
 }
-.input-group {
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: white;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.message-content {
+    max-width: 100%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.other-message .message-content {
+    background: var(--message-bg);
+    color: var(--text-dark);
+    border-top-left-radius: 4px;
+}
+
+.my-message {
+    justify-content: flex-end;
+}
+
+.my-message .message-content {
+    background: var(--my-message-bg);
+    color: var(--primary-dark);
+    border-top-right-radius: 4px;
+}
+
+.message-time {
+    font-size: 11px;
+    color: var(--text-light);
+    text-align: right;
+    margin-top: 4px;
+}
+
+.my-message .message-time {
+    color: rgba(28, 36, 64, 0.7);
+}
+
+.message-input-container {
+    padding: 15px 20px;
+    background: white;
+    border-top: 1px solid #eee;
+}
+
+.input-wrapper {
     display: flex;
     align-items: center;
     background: #f5f5f5;
     border-radius: 24px;
     padding: 8px 15px;
 }
-.messages-container {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;  /* Исправление для Safari */
-    padding: 20px;
-}
-.message {
-    display: flex;
-    margin-bottom: 15px;
-}
 
 #message-content {
     flex: 1;
     border: none;
     background: transparent;
-    padding: 8px 0;
+    padding: 8px 12px;
     font-size: 15px;
     outline: none;
 }
-.my-message {
-    justify-content: flex-end;
-}
 
-.my-message .message-content {
-    background: var(--primary-yellow);
-    color: var(--primary-dark);
-}
-.input-actions {
-    display: flex;
-    gap: 8px;
-    margin-left: 8px;
-}
-.message-input {
-    flex-shrink: 0;
-    padding: 15px 20px;
-    background: #fff;
-    border-top: 1px solid #eee;
-}
-#message-form {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.input-wrapper {
-    flex: 1;
-    display: flex;
-    background: #f5f5f5;
-    border-radius: 25px;
-    padding: 5px 15px;
-}
-
-#message-content {
-    flex: 1;
+.file-upload-btn {
+    background: none;
     border: none;
-    background: transparent;
-    padding: 10px 0;
-    font-size: 14px;
-}
-
-#message-content:focus {
-    outline: none;
-    box-shadow: none;
-}
-
-.actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.file-upload {
-    color: #666;
+    color: var(--text-light);
     cursor: pointer;
-    padding: 5px;
+    position: relative;
+    padding: 0;
+    margin-right: 8px;
+}
+
+.file-upload-btn i {
+    font-size: 18px;
+}
+
+#file-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
 }
 
 .send-btn {
@@ -469,93 +435,73 @@ body {
     align-items: center;
     justify-content: center;
     color: var(--primary-dark);
-}
-#message-form {
-    display: flex;
-    align-items: center;
-}
-
-#message-content {
-    flex: 1;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    outline: none;
-    margin-right: 10px;
-}
-
-.file-upload {
-    margin-right: 10px;
     cursor: pointer;
-    color: #666;
+    transition: all 0.2s;
 }
 
-.send-btn {
-    background: var(--primary-yellow);
-    color: var(--primary-dark);
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.send-btn:hover {
+    transform: scale(1.05);
 }
 
 /* Модальное окно */
 .modal {
     display: none;
     position: fixed;
-    z-index: 100;
-    left: 0;
     top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    animation: fadeIn 0.2s ease-out;
 }
 
 .modal-content {
     background: white;
     margin: 15% auto;
-    padding: 20px;
+    padding: 25px;
     width: 400px;
     max-width: 90%;
-    border-radius: 5px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
 }
 
 .modal-content h3 {
-    margin-bottom: 20px;
-    color: #333;
+    margin: 0 0 20px 0;
+    color: var(--text-dark);
 }
 
 .close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
     color: #aaa;
-    float: right;
-    font-size: 28px;
     cursor: pointer;
 }
 
 .close:hover {
-    color: #333;
+    color: #777;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    color: #555;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+    font-size: 14px;
 }
 
 .form-group select {
     width: 100%;
-    padding: 8px 10px;
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
+    font-size: 14px;
     outline: none;
 }
 
@@ -563,23 +509,13 @@ body {
     background: var(--primary-yellow);
     color: var(--primary-dark);
     border: none;
-    padding: 8px 15px;
+    padding: 10px 20px;
     border-radius: 4px;
-    cursor: pointer;
     font-weight: 600;
+    cursor: pointer;
     transition: all 0.2s;
 }
-.message-input {
-    border: 2px solid red !important;  /* Проверка видимости блока */
-}
 
-#message-form {
-    background: #00ff0030 !important;
-}
-
-#message-content {
-    border: 1px solid blue !important;
-}
 .btn-primary:hover {
     opacity: 0.9;
 }
@@ -590,13 +526,9 @@ body {
     to { opacity: 1; }
 }
 
-.modal {
-    animation: fadeIn 0.2s ease-out;
-}
-
 /* Полоса прокрутки */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -605,11 +537,47 @@ body {
 
 ::-webkit-scrollbar-thumb {
     background: #ccc;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: #aaa;
+}
+
+/* Файлы в сообщениях */
+.file-attachment {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.file-attachment a {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+.file-attachment i {
+    margin-right: 8px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .chat-app {
+        flex-direction: column;
+    }
+    
+    .chat-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 50vh;
+    }
+    
+    .chat-main {
+        height: 50vh;
+    }
 }
 </style>
 
@@ -622,6 +590,18 @@ function showCreateChatModal() {
 function hideCreateChatModal() {
     document.getElementById('create-chat-modal').style.display = 'none';
 }
+
+// Обработчики для модального окна
+document.querySelector('.new-chat-btn').addEventListener('click', showCreateChatModal);
+document.querySelector('.close').addEventListener('click', hideCreateChatModal);
+document.querySelector('.welcome-content .btn-primary').addEventListener('click', showCreateChatModal);
+
+// Закрытие модального окна при клике вне его
+window.addEventListener('click', function(event) {
+    if (event.target === document.getElementById('create-chat-modal')) {
+        hideCreateChatModal();
+    }
+});
 
 // AJAX создание чата
 document.getElementById('create-chat-form').addEventListener('submit', function(e) {
@@ -640,33 +620,28 @@ document.getElementById('create-chat-form').addEventListener('submit', function(
     .then(data => {
         if (data.success) {
             hideCreateChatModal();
-            window.location.reload(); // Обновляем страницу для отображения нового чата
+            window.location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Не удалось создать чат'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        alert('Произошла ошибка при создании чата');
     });
 });
 
-// Отправка файлов
-document.getElementById('file-input').addEventListener('change', function(e) {
-    if (this.files.length > 0) {
-        const fileName = this.files[0].name;
-        console.log(`Файл "${fileName}" готов к отправке`);
-    }
-});
-
+// Текущий активный чат
 let currentChatId = null;
 
+// Функция отправки сообщения
 async function sendMessage(event) {
     event.preventDefault();
-    const form = event.target;
     const messageInput = document.getElementById('message-content');
     const fileInput = document.getElementById('file-input');
     
     // Проверяем, есть ли что отправить
     if (!messageInput.value.trim() && !fileInput.files[0]) {
-        alert('Введите сообщение или прикрепите файл');
         return;
     }
 
@@ -687,9 +662,7 @@ async function sendMessage(event) {
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
         
@@ -702,47 +675,40 @@ async function sendMessage(event) {
         }
     } catch (error) {
         console.error('Ошибка отправки сообщения:', error);
-        alert('Ошибка отправки сообщения. Проверьте консоль для подробностей.');
+        alert('Ошибка отправки сообщения');
     }
 }
 
+// Функция загрузки чата
 async function loadChat(chatId, chatName) {
     currentChatId = chatId;
     
-    // Обновляем активный чат в UI
+    // Обновляем UI
     document.querySelectorAll('.chat-item').forEach(item => {
         item.classList.toggle('active', parseInt(item.dataset.chatId) === chatId);
     });
     
-    // Показываем область чата
     document.getElementById('welcome-screen').style.display = 'none';
     const activeChat = document.getElementById('active-chat');
     activeChat.style.display = 'flex';
     document.getElementById('current-chat-name').textContent = chatName;
-    activeChat.style.flexDirection = 'column'; // Явно задаем направление
-    activeChat.style.height = '100%';
+
     try {
-        console.log(`Загрузка сообщений для чата ${chatId}`);  // Логирование
         const response = await fetch(`/chat/${chatId}/messages/`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const messages = await response.json();
-        console.log('Получены сообщения:', messages);  // Логирование
-        
         const container = document.getElementById('messages-container');
         container.innerHTML = '';
         
         if (messages.length === 0) {
-            container.innerHTML = '<p>Нет сообщений</p>';
+            container.innerHTML = '<div class="no-messages">Нет сообщений</div>';
             return;
         }
         
         messages.forEach(msg => {
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${msg.is_my ? 'my-message' : ''}`;
+            messageDiv.className = `message ${msg.is_my ? 'my-message' : 'other-message'}`;
             
             let contentHTML = msg.content || '';
             if (msg.has_attachment) {
@@ -758,7 +724,7 @@ async function loadChat(chatId, chatName) {
             messageDiv.innerHTML = `
                 <div class="message-content">
                     ${contentHTML}
-                    <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                    <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                 </div>
             `;
             
@@ -768,63 +734,49 @@ async function loadChat(chatId, chatName) {
         container.scrollTop = container.scrollHeight;
     } catch (error) {
         console.error('Ошибка загрузки сообщений:', error);
-        const container = document.getElementById('messages-container');
-        container.innerHTML = `<p class="error">Ошибка загрузки сообщений: ${error.message}</p>`;
+        document.getElementById('messages-container').innerHTML = `
+            <div class="error-message">Ошибка загрузки сообщений</div>
+        `;
     }
 }
-// Поиск чатов
-document.getElementById('chat-search').addEventListener('input', debounce(function(e) {
-    const query = e.target.value.trim();
-    
-    if (query.length > 0) {
-        fetch(`/chat/search/?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(chats => {
-                updateChatList(chats);
-            })
-            .catch(error => {
-                console.error('Ошибка поиска:', error);
-            });
-    } else {
-        // Если поисковая строка пуста, показываем все чаты
-        fetch(`/chat/search/`)
-            .then(response => response.json())
-            .then(chats => {
-                updateChatList(chats);
-            });
-    }
-}, 300));
 
-function updateChatList(chats) {
-    const chatList = document.querySelector('.chat-list');
-    chatList.innerHTML = chats.map(chat => `
-        <div class="chat-item" data-chat-id="${chat.id}" onclick="loadChat(${chat.id}, '${chat.display_name ? chat.display_name.replace(/'/g, "\\'") : 'Чат'}')">
-            <div class="chat-avatar">
-                <i class="fas fa-user-circle"></i>
-            </div>
-            <div class="chat-info">
-                <h3>${chat.display_name || 'Чат'}</h3>
-                ${chat.last_message_content ? `<p class="last-message">${chat.last_message_content}</p>` : ''}
-            </div>
-            ${chat.unread_count ? `<span class="unread-badge">${chat.unread_count}</span>` : ''}
-            <span class="last-time">${chat.last_msg_time ? new Date(chat.last_msg_time).toLocaleTimeString() : ''}</span>
-        </div>
-    `).join('');
-}
-// Функция для дебаунса (задержки выполнения)
+// Поиск чатов
 function debounce(func, wait) {
     let timeout;
     return function() {
         const context = this, args = arguments;
         clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            func.apply(context, args);
-        }, wait);
+        timeout = setTimeout(() => func.apply(context, args), wait);
     };
 }
 
-// Инициализация - загружаем первый чат, если есть
+document.getElementById('chat-search').addEventListener('input', debounce(function(e) {
+    const query = e.target.value.trim();
+    
+    fetch(`/chat/search/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(chats => {
+            const chatList = document.querySelector('.chat-list');
+            chatList.innerHTML = chats.map(chat => `
+                <div class="chat-item" data-chat-id="${chat.id}" onclick="loadChat(${chat.id}, '${chat.display_name ? chat.display_name.replace(/'/g, "\\'") : 'Чат'}')">
+                    <div class="avatar-circle">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="chat-info">
+                        <h3>${chat.display_name || 'Чат'}</h3>
+                        ${chat.last_message_content ? `<p class="last-message">${chat.last_message_content}</p>` : ''}
+                    </div>
+                    ${chat.unread_count ? `<span class="unread-badge">${chat.unread_count}</span>` : ''}
+                    <span class="last-time">${chat.last_msg_time ? new Date(chat.last_msg_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                </div>
+            `).join('');
+        })
+        .catch(error => console.error('Ошибка поиска:', error));
+}, 300));
+
+// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем первый чат, если есть
     const firstChat = document.querySelector('.chat-item');
     if (firstChat) {
         const chatId = parseInt(firstChat.getAttribute('data-chat-id'));
@@ -834,6 +786,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Инициализация формы сообщения
     document.getElementById('message-form').addEventListener('submit', sendMessage);
+    
+    // Скрываем активный чат при загрузке
+    document.getElementById('active-chat').style.display = 'none';
 });
 </script>
 {% endblock %}
