@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 import openpyxl
 from django.utils import timezone
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 @login_required
 
 def edit_project(request, project_id):
@@ -70,22 +71,32 @@ def project_detail(request, project_id):
     })
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def create_project(request):
-    if not request.user.groups.filter(name="Менеджеры").exists():  # Или другой способ проверки
-        raise PermissionDenied("У вас нет прав для создания проекта.")
-    
-    if request.method == "POST":
+    if request.method == 'POST':
         form = ProjectForm(request.POST)
         if form.is_valid():
             project = form.save(commit=False)
-            project.creator = request.user  # Назначаем создателя проекта
+            project.creator = request.user
             project.save()
-            form.save_m2m()  # Сохраняем участников
-            return redirect('project_list')
-    else:
-        form = ProjectForm()
-
-    return render(request, "projects/create_project.html", {"form": form})
+            form.save_m2m()  # Для ManyToMany поля participants
+            
+            return JsonResponse({
+                'success': True,
+                'project': {
+                    'id': project.id,
+                    'title': project.title,
+                    'description': project.description,
+                }
+            })
+        else:
+            form_html = render_to_string('projects/project_form.html', {'form': form}, request=request)
+            return JsonResponse({'success': False, 'form_html': form_html})
+    
+    # GET запрос
+    form = ProjectForm()
+    form_html = render_to_string('projects/project_form.html', {'form': form}, request=request)
+    return JsonResponse({'form_html': form_html})
 
 @login_required
 def create_task(request, project_id):

@@ -118,7 +118,7 @@
 /* Базовые стили */
 .chat-app {
     display: flex;
-    height: 100vh;
+    height: 90vh;
     font-family: 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -279,6 +279,7 @@
     display: flex;
     flex-direction: column;
     background: white;
+    width: 100%; /* Добавьте это */
 }
 
 .welcome-screen {
@@ -320,8 +321,8 @@
     display: none;
     flex-direction: column;
     height: 100%;
+    width: 100%; /* Добавьте это */
 }
-
 .chat-header {
     padding: 15px 20px;
     border-bottom: 1px solid #eee;
@@ -382,6 +383,7 @@
 }
 
 .message-input-container {
+    width: 100%;
     padding: 15px 20px;
     background: white;
     border-top: 1px solid #eee;
@@ -393,6 +395,8 @@
     background: #f5f5f5;
     border-radius: 24px;
     padding: 8px 15px;
+    width: 242%;
+    box-sizing: border-box; /* Чтобы padding не увеличивал общую ширину */
 }
 
 #message-content {
@@ -562,7 +566,9 @@
 .file-attachment i {
     margin-right: 8px;
 }
-
+#message-form {
+    width: 100%;
+}
 /* Адаптивность */
 @media (max-width: 768px) {
     .chat-app {

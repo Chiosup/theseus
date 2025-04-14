@@ -6,8 +6,28 @@ class ProjectForm(forms.ModelForm):
         model = Project
         fields = ['title', 'description', 'start_date', 'end_date', 'status', 'participants']
         widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите название проекта'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Опишите детали проекта'
+            }),
+            'start_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'end_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'participants': forms.SelectMultiple(attrs={
+                'class': 'form-control',
+                'size': 5
+            }),
         }
 
 class TaskForm(forms.ModelForm):
