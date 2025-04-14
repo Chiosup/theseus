@@ -30,10 +30,10 @@
             
             <form action="{% url 'logout' %}" method="post" style="display:inline;">
                 {% csrf_token %}
-                <button type="submit" class="nav-link">Выйти</button>
+                <button type="submit" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i>Выйти</button>
             </form>
         {% else %}
-            <a href="/users/login/">Войти</a>
+            <a href="/users/login/"><i class="fa-solid fa-right-to-bracket"></i>Войти</a>
         {% endif %}
     </nav>
 
