@@ -7,8 +7,24 @@
 <p>Статус: {{ project.get_status_display }}</p>
 
 {% if user.groups.all.0.name == "Менеджеры" %}
-    <a href="{% url 'create_task' project.id %}" class="btn btn-success">Добавить задачу</a>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+        Добавить задачу
+    </button>
 {% endif %}
+<!-- Модалка для создания задачи -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">Создать задачу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body" id="modalTaskBody">
+                <!-- Сюда будет загружена форма -->
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     .kanban-container {
@@ -118,6 +134,42 @@
 </div>
 
 <script>
+$(document).ready(function(){
+    // Загрузка формы при открытии модалки
+    $('#createTaskModal').on('show.bs.modal', function () {
+        $.ajax({
+            url: "{% url 'create_task_modal' project.id %}",
+            type: 'GET',
+            success: function(data) {
+                $('#modalTaskBody').html(data.form_html);
+            },
+            error: function(xhr) {
+                console.error('Ошибка загрузки формы задачи:', xhr.responseText);
+            }
+        });
+    });
+
+    // Обработка сабмита формы
+    $(document).on('submit', '#taskForm', function(e){
+        e.preventDefault();
+        $.ajax({
+            url: "{% url 'create_task_modal' project.id %}",
+            method: "POST",
+            data: $(this).serialize(),
+            success: function(response){
+                if (response.success) {
+                    $('#createTaskModal').modal('hide');
+                    location.reload(); // обновим задачи
+                } else {
+                    $('#modalTaskBody').html(response.form_html); // ошибки
+                }
+            },
+            error: function(xhr){
+                console.error('Ошибка при отправке:', xhr.responseText);
+            }
+        });
+    });
+});
     // Функции для drag&drop
     function allowDrop(ev) {
         ev.preventDefault();
