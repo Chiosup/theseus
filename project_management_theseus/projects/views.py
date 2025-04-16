@@ -99,33 +99,25 @@ def create_project(request):
     return JsonResponse({'form_html': form_html})
 
 @login_required
-def create_task(request, project_id):
-    """Создание новой задачи в проекте (только для менеджеров)."""
-    project = get_object_or_404(Project, id=project_id)
 
-    if not request.user.groups.filter(name="Менеджеры").exists():
-        return redirect('project_detail', project_id=project.id)
-
-    if request.method == "POST":
+def create_task_modal(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+    if request.method == 'POST':
         form = TaskForm(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
-
-            # Устанавливаем даты, если их нет
-            if not task.start_date:
-                task.start_date = now().date()
-            if not task.end_date:
-                task.end_date = task.start_date + timedelta(days=7)
-            task.due_date = task.end_date  # Устанавливаем due_date = end_date
-
             task.project = project
             task.save()
-            form.save_m2m()  # Сохранение исполнителей
-            return redirect('project_detail', project_id=project.id)
+            form.save_m2m()  # сохраняем связи
+            return JsonResponse({'success': True})
+        else:
+            html = render(request, 'projects/partials/task_form.html', {'form': form, 'project': project}).content.decode('utf-8')
+            return JsonResponse({'success': False, 'form_html': html})
     else:
         form = TaskForm()
+        html = render(request, 'projects/partials/task_form.html', {'form': form, 'project': project}).content.decode('utf-8')
+        return JsonResponse({'form_html': html})
 
-    return render(request, 'projects/task_form.html', {'form': form, 'project': project})
 
 
 @login_required
@@ -209,7 +201,7 @@ def edit_task(request, task_id):
     else:
         form = TaskForm(instance=task)
     
-    return render(request, 'projects/task_form.html', {
+    return render(request, 'projects/partials/task_form.html', {
         'form': form,
         'task': task,  # Передаем задачу в шаблон
     })
